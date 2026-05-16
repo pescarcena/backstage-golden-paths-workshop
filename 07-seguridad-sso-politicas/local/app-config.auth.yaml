@@ -19,10 +19,3 @@ auth:
             - resolver: emailMatchingUserEntityProfileEmail
               dangerouslyAllowSignInWithoutUserInCatalog: true
   signInPage: oidc
-
-catalog:
-  locations:
-    - type: file
-      target: ../../08-rbac-multi-capa/shared/org.yaml
-      rules:
-        - allow: [User, Group]

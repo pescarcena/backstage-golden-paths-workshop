@@ -15,7 +15,8 @@ LICENSE
 
 # Node
 node_modules/
-**/local/backstage-app/
+# Nota: backstage-app se necesita en el contexto de build para Dockerfile.backstage (paso 07 K8s)
+# **/local/backstage-app/
 
 # Env files
 **/.env

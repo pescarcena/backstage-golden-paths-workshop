@@ -1,30 +1,77 @@
 # =============================================================================
 # Dockerfile para Backstage con soporte OIDC (Keycloak)
-# Extiende la imagen oficial agregando el modulo OIDC y la sign-in page custom
+# Build completo desde source usando create-app@0.8.2
 # =============================================================================
 #
-# Uso:
-#   docker build -f Dockerfile.backstage -t backstage-workshop:oidc .
+# Uso (desde la raiz del repo):
+#   docker build -f 07-seguridad-sso-politicas/k8s/Dockerfile.backstage -t backstage-workshop:oidc .
 #   kind load docker-image backstage-workshop:oidc --name backstage-workshop
 #
-# Este Dockerfile:
-# 1. Parte de la imagen oficial de Backstage
-# 2. Instala @backstage/plugin-auth-backend-module-oidc-provider
-# 3. Registra el modulo en el backend
+# Contexto de build: RAIZ del proyecto (para acceder a 02-deploy-backstage/local/backstage-app)
 # =============================================================================
 
-FROM ghcr.io/backstage/backstage:1.35.0
+# -----------------------------------------------------------------------------
+# Stage 1: Build
+# -----------------------------------------------------------------------------
+FROM node:22-bookworm AS build
 
-# Instalar el modulo OIDC en el backend
-USER root
 WORKDIR /app
 
-# Agregar dependencia del modulo OIDC
-RUN --mount=type=cache,target=/home/node/.cache/yarn \
-    yarn --cwd packages/backend add @backstage/plugin-auth-backend-module-oidc-provider
+# Habilitar corepack para Yarn 4 (la app tiene "packageManager": "yarn@4.4.1")
+RUN corepack enable
 
-# Registrar el modulo OIDC en el backend (agregar despues del guest-provider)
+# Copiar la app Backstage (debe existir previamente via create-app)
+COPY 02-deploy-backstage/local/backstage-app ./
+
+# Instalar modulo OIDC en el backend
+RUN yarn --cwd packages/backend add @backstage/plugin-auth-backend-module-oidc-provider
+
+# Copiar modulo de auth custom al frontend
+COPY 07-seguridad-sso-politicas/shared/auth-module/ packages/app/src/modules/auth/
+
+# Registrar modulo OIDC en el backend (despues del guest-provider)
 RUN sed -i '/plugin-auth-backend-module-guest-provider/a backend.add(import("@backstage/plugin-auth-backend-module-oidc-provider"));' \
-    packages/backend/src/index.ts || true
+    packages/backend/src/index.ts
 
-USER node
+# Registrar authModule en el frontend (App.tsx)
+RUN sed -i "s|import { navModule } from './modules/nav';|import { navModule } from './modules/nav';\\nimport { authModule } from './modules/auth';|" \
+    packages/app/src/App.tsx && \
+    sed -i 's/features: \[catalogPlugin, navModule\]/features: [catalogPlugin, navModule, authModule]/' \
+    packages/app/src/App.tsx
+
+# Instalar dependencias y compilar
+RUN yarn install
+RUN yarn build:all
+
+# -----------------------------------------------------------------------------
+# Stage 2: Production
+# -----------------------------------------------------------------------------
+FROM node:22-bookworm
+
+WORKDIR /app
+
+# Habilitar corepack
+RUN corepack enable
+
+# Extraer el bundle de produccion generado por backstage-cli
+# Este bundle ya contiene packages/backend/dist/ y packages/app/dist/
+COPY --from=build /app/packages/backend/dist/bundle.tar.gz /tmp/bundle.tar.gz
+RUN tar xzf /tmp/bundle.tar.gz -C /app && rm /tmp/bundle.tar.gz
+
+# Copiar node_modules de la raiz (necesario para runtime, ya que la app usa nodeLinker: node-modules)
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/yarn.lock ./yarn.lock
+COPY --from=build /app/.yarnrc.yml ./.yarnrc.yml
+COPY --from=build /app/.yarn ./.yarn
+
+# Copiar configuraciones base (el ConfigMap del paso 02 las sobrescribira en /app/app-config.yaml)
+COPY --from=build /app/app-config.yaml ./app-config.yaml
+COPY --from=build /app/app-config.production.yaml ./app-config.production.yaml
+
+ENV NODE_ENV=production
+ENV PORT=7007
+
+EXPOSE 7007
+
+CMD ["node", "packages/backend"]

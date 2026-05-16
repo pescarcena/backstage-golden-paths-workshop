@@ -6,13 +6,8 @@
 
 BACKSTAGE_APP_DIR := ../../02-deploy-backstage/local/backstage-app
 
-# Detectar OS para sed in-place (macOS usa -i '', Linux usa -i)
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-    SED_INPLACE := $(SED_INPLACE)
-else
-    SED_INPLACE := sed -i
-endif
+# Usar sed con backup para compatibilidad cross-platform (macOS/Linux)
+SED_INPLACE := sed -i.bak
 
 # Colores
 GREEN  := \033[0;32m

@@ -4,11 +4,20 @@
 
 .PHONY: all deploy-keycloak wait-keycloak configure-github-auth \
         configure-keycloak-auth apply-permissions restart-backstage \
-        build-backstage-image \
+        build-backstage-image ensure-app \
         test-access status verify clean help
 
 BACKSTAGE_OIDC_IMAGE := backstage-workshop:oidc
 CLUSTER_NAME := backstage-workshop
+BACKSTAGE_APP_DIR := ../../02-deploy-backstage/local/backstage-app
+
+# Contexto de Docker build: raiz del proyecto (para acceder a la app y shared/)
+DOCKERFILE_PATH := $(abspath Dockerfile.backstage)
+REPO_ROOT := $(abspath ../..)
+
+# Detectar IP del nodo Kind (accesible desde host y desde pods)
+NODE_IP := $(shell kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null)
+KEYCLOAK_URL := $(if $(NODE_IP),http://$(NODE_IP):30004,http://localhost:30004)
 
 # Colores
 GREEN  := \033[0;32m
@@ -18,12 +27,13 @@ NC     := \033[0m
 BOLD   := \033[1m
 
 ## Ejecutar todo el paso
-all: deploy-keycloak wait-keycloak build-backstage-image configure-keycloak-auth apply-permissions restart-backstage verify
+all: ensure-app deploy-keycloak wait-keycloak build-backstage-image configure-keycloak-auth apply-permissions restart-backstage verify
 	@echo ""
 	@echo "$(GREEN)$(BOLD)Paso 07 completado! Seguridad configurada.$(NC)"
 	@echo ""
 	@echo "$(BOLD)Accesos:$(NC)"
-	@echo "  Keycloak:  $(YELLOW)http://localhost:30004$(NC)  (admin / admin123)"
+	@echo "  Keycloak:  $(YELLOW)$(KEYCLOAK_URL)$(NC)  (admin / admin123)"
+	@echo "             $(YELLOW)http://localhost:30004$(NC)  (NodePort alternativo)"
 	@echo "  Backstage: $(YELLOW)http://localhost:30000$(NC)  (login via Keycloak o GitHub)"
 
 ## Desplegar Keycloak como IdP local
@@ -36,14 +46,11 @@ deploy-keycloak:
 ## Esperar a que Keycloak este listo
 wait-keycloak:
 	@echo "$(YELLOW)Esperando a que Keycloak este listo (puede tardar 2-3 min)...$(NC)"
-	@kubectl wait --namespace keycloak \
-		--for=condition=ready pod \
-		--selector=app=keycloak \
-		--timeout=300s
+	@kubectl rollout status deployment/keycloak -n keycloak --timeout=300s
 	@echo "$(GREEN)Keycloak listo$(NC)"
 	@echo ""
 	@echo "$(BOLD)Acceso a Keycloak:$(NC)"
-	@echo "  URL:      $(YELLOW)http://localhost:30004$(NC)"
+	@echo "  URL:      $(YELLOW)$(KEYCLOAK_URL)$(NC)"
 	@echo "  Admin:    $(YELLOW)admin$(NC)"
 	@echo "  Password: $(YELLOW)admin123$(NC)"
 	@echo ""
@@ -68,11 +75,26 @@ configure-github-auth:
 	@echo ""
 	@echo "$(YELLOW)Despues de configurar, reinicia Backstage: make restart-backstage$(NC)"
 
+## Asegurar que la app Backstage exista (requerida para build de imagen)
+ensure-app:
+	@if [ ! -d "$(BACKSTAGE_APP_DIR)" ]; then \
+		echo "$(YELLOW)Creando app Backstage (requerida para build de imagen)...$(NC)"; \
+		mkdir -p ../../02-deploy-backstage/local; \
+		cd ../../02-deploy-backstage/local && printf "\n" | npx @backstage/create-app@0.8.2 --path backstage-app --skip-install; \
+		cd backstage-app && yarn install; \
+		echo "$(GREEN)App Backstage creada en $(BACKSTAGE_APP_DIR)$(NC)"; \
+	else \
+		echo "$(GREEN)App Backstage ya existe en $(BACKSTAGE_APP_DIR)$(NC)"; \
+	fi
+
 ## Construir imagen custom de Backstage con soporte OIDC
-build-backstage-image:
+build-backstage-image: ensure-app
 	@echo "$(BOLD)Construyendo imagen custom de Backstage con OIDC...$(NC)"
-	@echo "$(YELLOW)Esto puede tardar unos minutos...$(NC)"
-	@docker build -f Dockerfile.backstage -t $(BACKSTAGE_OIDC_IMAGE) .
+	@echo "$(YELLOW)Esto puede tardar varios minutos (build completo desde source)...$(NC)"
+	@echo "$(YELLOW)Nota: renombrando .dockerignore interno para incluir src/ en el build...$(NC)"
+	@mv $(BACKSTAGE_APP_DIR)/.dockerignore $(BACKSTAGE_APP_DIR)/.dockerignore.bak 2>/dev/null || true
+	@docker build -f $(DOCKERFILE_PATH) -t $(BACKSTAGE_OIDC_IMAGE) $(REPO_ROOT)
+	@mv $(BACKSTAGE_APP_DIR)/.dockerignore.bak $(BACKSTAGE_APP_DIR)/.dockerignore 2>/dev/null || true
 	@echo "$(GREEN)Imagen construida: $(BACKSTAGE_OIDC_IMAGE)$(NC)"
 	@echo "$(BOLD)Cargando imagen en el cluster Kind...$(NC)"
 	@kind load docker-image $(BACKSTAGE_OIDC_IMAGE) --name $(CLUSTER_NAME)
@@ -85,19 +107,64 @@ build-backstage-image:
 ## Configurar Keycloak (OIDC) en Backstage
 configure-keycloak-auth:
 	@echo "$(BOLD)Configurando Keycloak auth para Backstage...$(NC)"
+	@if [ -z "$(NODE_IP)" ]; then \
+		echo "$(RED)Error: No se pudo obtener la IP del nodo de Kind. Asegurate de que el cluster este activo.$(NC)"; \
+		exit 1; \
+	fi
+	@echo "  $(YELLOW)IP del nodo detectada: $(NODE_IP)$(NC)"
+	@echo "  $(YELLOW)Keycloak URL: $(KEYCLOAK_URL)$(NC)"
+	@echo "$(BOLD)Configurando KC_HOSTNAME_URL en Keycloak...$(NC)"
+	@kubectl set env deployment/keycloak KC_HOSTNAME_URL=$(KEYCLOAK_URL) KC_HOSTNAME_ADMIN_URL=$(KEYCLOAK_URL) -n keycloak
+	@kubectl rollout restart deployment/keycloak -n keycloak
+	@echo "$(YELLOW)Esperando reinicio de Keycloak...$(NC)"
+	@kubectl rollout status deployment/keycloak -n keycloak --timeout=180s
+	@echo "$(GREEN)Keycloak reiniciado con hostname $(KEYCLOAK_URL)$(NC)"
+	@echo "$(BOLD)Generando app-config.auth.yaml con URL de Keycloak...$(NC)"
+	@sed 's|http://keycloak.keycloak.svc:8080|$(KEYCLOAK_URL)|g' app-config.auth.yaml > /tmp/app-config.auth.yaml
 	@kubectl apply -f backstage-auth-secret.yaml
 	@kubectl create configmap backstage-auth-config \
-		--from-file=app-config.auth.yaml \
+		--from-file=/tmp/app-config.auth.yaml \
 		-n backstage \
 		--dry-run=client -o yaml | kubectl apply -f -
 	@echo "$(BOLD)Parcheando deployment para montar auth config y secrets...$(NC)"
-	@kubectl patch deployment backstage -n backstage --type='json' -p='[ \
-		{"op": "add", "path": "/spec/template/spec/volumes/-", "value": {"name": "auth-config", "configMap": {"name": "backstage-auth-config"}}}, \
-		{"op": "add", "path": "/spec/template/spec/containers/0/volumeMounts/-", "value": {"name": "auth-config", "mountPath": "/app/app-config.auth.yaml", "subPath": "app-config.auth.yaml", "readOnly": true}}, \
-		{"op": "add", "path": "/spec/template/spec/containers/0/envFrom/-", "value": {"secretRef": {"name": "backstage-auth-secrets"}}}, \
-		{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--config", "/app/app-config.yaml", "--config", "/app/app-config.auth.yaml"]} \
-	]'
-	@echo "$(GREEN)Configuracion de auth y secrets aplicados$(NC)"
+	@if ! kubectl get deployment backstage -n backstage -o json | grep -q '"name": "auth-config"'; then \
+		echo "$(YELLOW)Agregando volume auth-config...$(NC)"; \
+		kubectl patch deployment backstage -n backstage --type='json' -p='[{"op": "add", "path": "/spec/template/spec/volumes/-", "value": {"name": "auth-config", "configMap": {"name": "backstage-auth-config"}}}]'; \
+	else \
+		echo "$(YELLOW)Volume auth-config ya existe$(NC)"; \
+	fi
+	@if ! kubectl get deployment backstage -n backstage -o json | grep -q '"mountPath": "/app/app-config.auth.yaml"'; then \
+		echo "$(YELLOW)Agregando volumeMount auth-config...$(NC)"; \
+		kubectl patch deployment backstage -n backstage --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/volumeMounts/-", "value": {"name": "auth-config", "mountPath": "/app/app-config.auth.yaml", "subPath": "app-config.auth.yaml", "readOnly": true}}]'; \
+	else \
+		echo "$(YELLOW)VolumeMount auth-config ya existe$(NC)"; \
+	fi
+	@if ! kubectl get deployment backstage -n backstage -o json | grep -q '"name": "backstage-auth-secrets"'; then \
+		echo "$(YELLOW)Agregando envFrom backstage-auth-secrets...$(NC)"; \
+		kubectl patch deployment backstage -n backstage --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/envFrom/-", "value": {"secretRef": {"name": "backstage-auth-secrets"}}}]'; \
+	else \
+		echo "$(YELLOW)envFrom backstage-auth-secrets ya existe$(NC)"; \
+	fi
+	@echo "$(BOLD)Montando org.yaml (usuarios/grupos) en Backstage...$(NC)"
+	@kubectl create configmap backstage-org-catalog \
+		--from-file=org.yaml=../../08-rbac-multi-capa/shared/org.yaml \
+		-n backstage \
+		--dry-run=client -o yaml | kubectl apply -f -
+	@if ! kubectl get deployment backstage -n backstage -o json | grep -q '"name": "org-catalog"'; then \
+		echo "$(YELLOW)Agregando volume org-catalog...$(NC)"; \
+		kubectl patch deployment backstage -n backstage --type='json' -p='[{"op": "add", "path": "/spec/template/spec/volumes/-", "value": {"name": "org-catalog", "configMap": {"name": "backstage-org-catalog"}}}]'; \
+	else \
+		echo "$(YELLOW)Volume org-catalog ya existe$(NC)"; \
+	fi
+	@if ! kubectl get deployment backstage -n backstage -o json | grep -q '"mountPath": "/app/org.yaml"'; then \
+		echo "$(YELLOW)Agregando volumeMount org-catalog...$(NC)"; \
+		kubectl patch deployment backstage -n backstage --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/volumeMounts/-", "value": {"name": "org-catalog", "mountPath": "/app/org.yaml", "subPath": "org.yaml", "readOnly": true}}]'; \
+	else \
+		echo "$(YELLOW)VolumeMount org-catalog ya existe$(NC)"; \
+	fi
+	@echo "$(YELLOW)Actualizando args del deployment...$(NC)"
+	@kubectl patch deployment backstage -n backstage --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--config", "/app/app-config.yaml", "--config", "/app/app-config.auth.yaml"]}]' 2>/dev/null || echo "$(YELLOW)Args ya actualizados o no aplicables$(NC)"
+	@echo "$(GREEN)Configuracion de auth, secrets y org catalog aplicados$(NC)"
 
 ## Aplicar politicas de permisos
 apply-permissions:
@@ -175,7 +242,7 @@ verify:
 		echo "$(YELLOW)○ Configuracion de auth pendiente$(NC)"
 	@echo ""
 	@echo "$(BOLD)Accesos:$(NC)"
-	@echo "  Keycloak:  http://localhost:30004  (admin / admin123)"
+	@echo "  Keycloak:  $(KEYCLOAK_URL)  (admin / admin123)"
 	@echo "  Backstage: http://localhost:30000"
 
 ## Limpiar recursos de seguridad

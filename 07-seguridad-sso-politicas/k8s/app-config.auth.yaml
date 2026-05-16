@@ -1,6 +1,8 @@
 # =============================================================================
 # Configuracion de autenticacion para Backstage (modo K8s)
-# Keycloak corre en el cluster como Service (keycloak.keycloak.svc:8080)
+# NOTA: La URL de Keycloak se reemplaza dinamicamente en el Makefile
+#       por la IP del nodo + NodePort (ej: http://192.168.x.x:30004).
+#       No modificar el placeholder 'keycloak.keycloak.svc:8080' aqui.
 # =============================================================================
 
 # --- OPCION A: GitHub OAuth ---
@@ -45,5 +47,11 @@ auth:
         signIn:
           resolvers:
             - resolver: emailMatchingUserEntityProfileEmail
-              options:
-                dangerouslyAllowSignInWithoutUserInCatalog: true
+              dangerouslyAllowSignInWithoutUserInCatalog: true
+
+catalog:
+  locations:
+    - type: file
+      target: /app/org.yaml
+      rules:
+        - allow: [User, Group]
