@@ -53,7 +53,9 @@ Backstage implementa Golden Paths mediante **Software Templates** (Scaffolder):
 
 ## Estructura del template
 
-Nuestro template de ejemplo crea un **servicio Node.js con Express**:
+Disponemos de dos templates de ejemplo:
+
+**1. Servicio Node.js con Express**
 
 ```
 templates/nodejs-service/
@@ -64,6 +66,26 @@ templates/nodejs-service/
     ├── package.json       # Dependencias Node.js
     └── src/
         └── index.js       # Aplicacion Express
+```
+
+**2. Golden Path Traditional App (Helm + ArgoCD)**
+
+```
+templates/backstage-skeleton/
+├── template.yaml          # Definicion del template
+└── skeleton/              # Archivos que se generan
+    ├── catalog-info.yaml  # Registro en Backstage
+    ├── Dockerfile         # Imagen nginx con app estatica
+    ├── src/
+    │   └── index.html     # Aplicacion web estatica
+    ├── charts/app/        # Chart de Helm
+    │   ├── Chart.yaml
+    │   ├── values.yaml
+    │   └── templates/
+    │       ├── deployment.yaml
+    │       └── service.yaml
+    └── argocd/
+        └── application.yaml  # App de ArgoCD
 ```
 
 ### template.yaml explicado
@@ -145,17 +167,26 @@ cat templates/nodejs-service/template.yaml
 cat templates/nodejs-service/skeleton/src/index.js
 ```
 
-### 2. Crear el ConfigMap con los archivos del template
+### 2. Crear el ConfigMap con los archivos de los templates
 
-Los archivos del template necesitan estar disponibles dentro del contenedor de Backstage. Creamos un ConfigMap con todos los archivos:
+Los archivos de los templates necesitan estar disponibles dentro del contenedor de Backstage. Creamos un ConfigMap con todos los archivos:
 
 ```bash
 kubectl create configmap backstage-templates -n backstage \
-  --from-file=template.yaml=templates/nodejs-service/template.yaml \
-  --from-file=skeleton-package.json=templates/nodejs-service/skeleton/package.json \
-  --from-file=skeleton-Dockerfile=templates/nodejs-service/skeleton/Dockerfile \
-  --from-file=skeleton-catalog-info.yaml=templates/nodejs-service/skeleton/catalog-info.yaml \
-  --from-file=skeleton-src-index.js=templates/nodejs-service/skeleton/src/index.js \
+  --from-file=nodejs-template.yaml=templates/nodejs-service/template.yaml \
+  --from-file=nodejs-package.json=templates/nodejs-service/skeleton/package.json \
+  --from-file=nodejs-Dockerfile=templates/nodejs-service/skeleton/Dockerfile \
+  --from-file=nodejs-catalog-info.yaml=templates/nodejs-service/skeleton/catalog-info.yaml \
+  --from-file=nodejs-src-index.js=templates/nodejs-service/skeleton/src/index.js \
+  --from-file=skeleton-template.yaml=templates/backstage-skeleton/template.yaml \
+  --from-file=skeleton-catalog-info.yaml=templates/backstage-skeleton/skeleton/catalog-info.yaml \
+  --from-file=skeleton-Dockerfile=templates/backstage-skeleton/skeleton/Dockerfile \
+  --from-file=skeleton-src-index.html=templates/backstage-skeleton/skeleton/src/index.html \
+  --from-file=skeleton-chart.yaml=templates/backstage-skeleton/skeleton/charts/app/Chart.yaml \
+  --from-file=skeleton-values.yaml=templates/backstage-skeleton/skeleton/charts/app/values.yaml \
+  --from-file=skeleton-deployment.yaml=templates/backstage-skeleton/skeleton/charts/app/templates/deployment.yaml \
+  --from-file=skeleton-service.yaml=templates/backstage-skeleton/skeleton/charts/app/templates/service.yaml \
+  --from-file=skeleton-argocd-app.yaml=templates/backstage-skeleton/skeleton/argocd/application.yaml \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
@@ -183,16 +214,13 @@ Backstage se reiniciara automaticamente. Espera a que este listo:
 kubectl rollout status deployment/backstage -n backstage --timeout=300s
 ```
 
-### 3. Usar el template
+### 3. Usar los templates
 
 1. En Backstage (http://localhost:30000), ve a **Create**
-2. Selecciona el template **"Servicio Node.js"**
-3. Llena el formulario:
-   - **Nombre**: `mi-primer-servicio`
-   - **Equipo**: (selecciona uno)
-   - **Puerto**: `3000`
-   - **Version Node.js**: `20`
-   - **Repositorio**: tu organizacion en GitHub
+2. Selecciona uno de los templates disponibles:
+   - **"Servicio Node.js"** — Crea un servicio Express con Dockerfile y CI/CD
+   - **"Golden Path Traditional App"** — Crea una app estatica con Helm + ArgoCD
+3. Llena el formulario segun el template elegido
 4. Click en **Create**
 
 Backstage ejecutara los pasos automaticamente:

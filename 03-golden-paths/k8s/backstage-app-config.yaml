@@ -53,6 +53,10 @@ data:
           target: /app/templates/nodejs-service/template.yaml
           rules:
             - allow: [Template]
+        - type: file
+          target: /app/templates/backstage-skeleton/template.yaml
+          rules:
+            - allow: [Template]
 
     techdocs:
       builder: 'local'

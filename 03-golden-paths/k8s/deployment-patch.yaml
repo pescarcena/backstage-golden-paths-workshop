@@ -14,11 +14,23 @@ spec:
             - -c
             - |
               mkdir -p /templates/nodejs-service/skeleton/src
-              cp /tpl-data/template.yaml /templates/nodejs-service/
-              cp /tpl-data/skeleton-package.json /templates/nodejs-service/skeleton/package.json
-              cp /tpl-data/skeleton-Dockerfile /templates/nodejs-service/skeleton/Dockerfile
-              cp /tpl-data/skeleton-catalog-info.yaml /templates/nodejs-service/skeleton/catalog-info.yaml
-              cp /tpl-data/skeleton-src-index.js /templates/nodejs-service/skeleton/src/index.js
+              mkdir -p /templates/backstage-skeleton/skeleton/src
+              mkdir -p /templates/backstage-skeleton/skeleton/charts/app/templates
+              mkdir -p /templates/backstage-skeleton/skeleton/argocd
+              cp /tpl-data/nodejs-template.yaml /templates/nodejs-service/
+              cp /tpl-data/nodejs-package.json /templates/nodejs-service/skeleton/package.json
+              cp /tpl-data/nodejs-Dockerfile /templates/nodejs-service/skeleton/Dockerfile
+              cp /tpl-data/nodejs-catalog-info.yaml /templates/nodejs-service/skeleton/catalog-info.yaml
+              cp /tpl-data/nodejs-src-index.js /templates/nodejs-service/skeleton/src/index.js
+              cp /tpl-data/skeleton-template.yaml /templates/backstage-skeleton/
+              cp /tpl-data/skeleton-catalog-info.yaml /templates/backstage-skeleton/skeleton/catalog-info.yaml
+              cp /tpl-data/skeleton-Dockerfile /templates/backstage-skeleton/skeleton/Dockerfile
+              cp /tpl-data/skeleton-src-index.html /templates/backstage-skeleton/skeleton/src/index.html
+              cp /tpl-data/skeleton-chart.yaml /templates/backstage-skeleton/skeleton/charts/app/Chart.yaml
+              cp /tpl-data/skeleton-values.yaml /templates/backstage-skeleton/skeleton/charts/app/values.yaml
+              cp /tpl-data/skeleton-deployment.yaml /templates/backstage-skeleton/skeleton/charts/app/templates/deployment.yaml
+              cp /tpl-data/skeleton-service.yaml /templates/backstage-skeleton/skeleton/charts/app/templates/service.yaml
+              cp /tpl-data/skeleton-argocd-app.yaml /templates/backstage-skeleton/skeleton/argocd/application.yaml
           volumeMounts:
             - name: tpl-data
               mountPath: /tpl-data

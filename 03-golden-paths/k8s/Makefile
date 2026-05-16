@@ -5,6 +5,7 @@
 .PHONY: all create-configmap update-app-config patch-deployment wait-backstage verify clean help
 
 TEMPLATE_DIR := ../shared/templates/nodejs-service
+SKELETON_DIR := ../shared/templates/backstage-skeleton
 K8S_DIR := .
 
 # Colores
@@ -19,18 +20,27 @@ all: create-configmap update-app-config patch-deployment wait-backstage verify
 	@echo ""
 	@echo "$(GREEN)$(BOLD)Paso 03 completado! Golden Paths configurados.$(NC)"
 	@echo ""
-	@echo "Accede a Backstage y ve a $(YELLOW)Create$(NC) para ver el template registrado"
+	@echo "Accede a Backstage y ve a $(YELLOW)Create$(NC) para ver los templates registrados"
 	@echo "  $(YELLOW)http://localhost:30000/create$(NC)"
 
 ## Crear ConfigMap con los archivos del template
 create-configmap:
-	@echo "$(BOLD)Creando ConfigMap con archivos del template...$(NC)"
+	@echo "$(BOLD)Creando ConfigMap con archivos de los templates...$(NC)"
 	@kubectl create configmap backstage-templates -n backstage \
-		--from-file=template.yaml=$(TEMPLATE_DIR)/template.yaml \
-		--from-file=skeleton-package.json=$(TEMPLATE_DIR)/skeleton/package.json \
-		--from-file=skeleton-Dockerfile=$(TEMPLATE_DIR)/skeleton/Dockerfile \
-		--from-file=skeleton-catalog-info.yaml=$(TEMPLATE_DIR)/skeleton/catalog-info.yaml \
-		--from-file=skeleton-src-index.js=$(TEMPLATE_DIR)/skeleton/src/index.js \
+		--from-file=nodejs-template.yaml=$(TEMPLATE_DIR)/template.yaml \
+		--from-file=nodejs-package.json=$(TEMPLATE_DIR)/skeleton/package.json \
+		--from-file=nodejs-Dockerfile=$(TEMPLATE_DIR)/skeleton/Dockerfile \
+		--from-file=nodejs-catalog-info.yaml=$(TEMPLATE_DIR)/skeleton/catalog-info.yaml \
+		--from-file=nodejs-src-index.js=$(TEMPLATE_DIR)/skeleton/src/index.js \
+		--from-file=skeleton-template.yaml=$(SKELETON_DIR)/template.yaml \
+		--from-file=skeleton-catalog-info.yaml=$(SKELETON_DIR)/skeleton/catalog-info.yaml \
+		--from-file=skeleton-Dockerfile=$(SKELETON_DIR)/skeleton/Dockerfile \
+		--from-file=skeleton-src-index.html=$(SKELETON_DIR)/skeleton/src/index.html \
+		--from-file=skeleton-chart.yaml=$(SKELETON_DIR)/skeleton/charts/app/Chart.yaml \
+		--from-file=skeleton-values.yaml=$(SKELETON_DIR)/skeleton/charts/app/values.yaml \
+		--from-file=skeleton-deployment.yaml=$(SKELETON_DIR)/skeleton/charts/app/templates/deployment.yaml \
+		--from-file=skeleton-service.yaml=$(SKELETON_DIR)/skeleton/charts/app/templates/service.yaml \
+		--from-file=skeleton-argocd-app.yaml=$(SKELETON_DIR)/skeleton/argocd/application.yaml \
 		--dry-run=client -o yaml | kubectl apply -f -
 	@echo "$(GREEN)ConfigMap backstage-templates creado$(NC)"
 
@@ -62,16 +72,25 @@ verify:
 	@echo "--- ConfigMap backstage-templates ---"
 	@kubectl get configmap backstage-templates -n backstage -o jsonpath='{.metadata.name}' && echo " $(GREEN)✓$(NC)" || echo " $(RED)✗$(NC)"
 	@echo ""
-	@echo "--- Template registrado en Backstage ---"
+	@echo "--- Templates registrados en Backstage ---"
 	@attempt=1; \
+	FOUND_NODEJS=0; \
+	FOUND_SKELETON=0; \
 	while [ $$attempt -le 5 ]; do \
 		RESULT=$$(curl -s http://localhost:30000/api/catalog/entities?filter=kind=template 2>/dev/null); \
 		if echo "$$RESULT" | grep -q "nodejs-service" 2>/dev/null; then \
 			echo "$(GREEN)✓ Template 'nodejs-service' registrado en el catalogo$(NC)"; \
+			FOUND_NODEJS=1; \
+		fi; \
+		if echo "$$RESULT" | grep -q "golden-path-traditional" 2>/dev/null; then \
+			echo "$(GREEN)✓ Template 'golden-path-traditional' registrado en el catalogo$(NC)"; \
+			FOUND_SKELETON=1; \
+		fi; \
+		if [ $$FOUND_NODEJS -eq 1 ] && [ $$FOUND_SKELETON -eq 1 ]; then \
 			break; \
 		fi; \
 		if [ $$attempt -eq 5 ]; then \
-			echo "$(YELLOW)⏳ Template aun no visible en el catalogo (puede tardar ~30s)$(NC)"; \
+			echo "$(YELLOW)⏳ Algunos templates aun no visibles en el catalogo (puede tardar ~30s)$(NC)"; \
 			echo "  Verifica manualmente en: http://localhost:30000/create"; \
 		fi; \
 		sleep 10; \

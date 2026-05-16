@@ -16,16 +16,23 @@ make all
 ```bash
 mkdir -p ../../02-deploy-backstage/local/backstage-app/templates
 cp -r ../shared/templates/nodejs-service ../../02-deploy-backstage/local/backstage-app/templates/
+cp -r ../shared/templates/backstage-skeleton ../../02-deploy-backstage/local/backstage-app/templates/
 ```
 
-### 2. Registrar el template en app-config.yaml
+### 2. Registrar los templates en app-config.yaml
 
-Agrega la siguiente entrada en la seccion `catalog.locations` del `app-config.yaml` del proyecto Backstage:
+Agrega las siguientes entradas en la seccion `catalog.locations` del `app-config.yaml` del proyecto Backstage:
 
 ```yaml
-    # Workshop Golden Paths template
+    # Workshop Golden Paths template - Node.js Service
     - type: file
       target: ../../templates/nodejs-service/template.yaml
+      rules:
+        - allow: [Template]
+
+    # Workshop Golden Paths template - Backstage Skeleton
+    - type: file
+      target: ../../templates/backstage-skeleton/template.yaml
       rules:
         - allow: [Template]
 ```
@@ -46,7 +53,9 @@ make start-backstage
 
 ### 4. Verificar
 
-Abre http://localhost:3000/create y verifica que el template "Servicio Node.js" aparece.
+Abre http://localhost:3000/create y verifica que aparecen ambos templates:
+- **"Servicio Node.js"**
+- **"Golden Path Traditional App"**
 
 ## Diferencias con modo Kubernetes
 

@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.appName }}
+  annotations:
+    github.com/project-slug: ${{ values.githubOrg }}/${{ values.repoName }}
+    argocd/app-name: ${{ values.appName }}
+    backstage.io/kubernetes-id: ${{ values.appName }}
+spec:
+  type: service
+  owner: ${{ values.githubOrg }}
+  lifecycle: production

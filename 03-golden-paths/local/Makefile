@@ -6,8 +6,8 @@
 
 BACKSTAGE_APP_DIR := ../../02-deploy-backstage/local/backstage-app
 
-# Usar sed con backup para compatibilidad cross-platform (macOS/Linux)
-SED_INPLACE := sed -i.bak
+# Usar Python3 para ediciones robustas de YAML (sed multilinea falla en macOS)
+PYTHON := python3
 
 # Colores
 GREEN  := \033[0;32m
@@ -41,32 +41,9 @@ configure:
 	fi
 	@mkdir -p $(BACKSTAGE_APP_DIR)/templates
 	@cp -r ../shared/templates/nodejs-service $(BACKSTAGE_APP_DIR)/templates/
-	@$(SED_INPLACE) 's/allow: \[Component, System, API, Resource, Location\]/allow: [Component, System, API, Resource, Location, Template]/' $(BACKSTAGE_APP_DIR)/app-config.yaml 2>/dev/null || true
-	@if ! grep -q "nodejs-service/template.yaml" $(BACKSTAGE_APP_DIR)/app-config.yaml 2>/dev/null; then \
-		$(SED_INPLACE) '/- allow: \[User, Group\]/a\
-\
-\    # Workshop Golden Paths template\
-\    - type: file\
-\      target: ../../templates/nodejs-service/template.yaml\
-\      rules:\
-\        - allow: [Template]' $(BACKSTAGE_APP_DIR)/app-config.yaml; \
-		echo "$(GREEN)Template registrado en app-config.yaml$(NC)"; \
-	else \
-		echo "$(YELLOW)Template ya registrado en app-config.yaml$(NC)"; \
-	fi
+	@cp -r ../shared/templates/backstage-skeleton $(BACKSTAGE_APP_DIR)/templates/
 	@cp ../shared/org.yaml $(BACKSTAGE_APP_DIR)/org.yaml
-	@if ! grep -q "org.yaml" $(BACKSTAGE_APP_DIR)/app-config.yaml 2>/dev/null; then \
-		$(SED_INPLACE) '/nodejs-service\/template.yaml/,/- allow: \[Template\]/a\
-\
-\    # Workshop org data (groups and users)\
-\    - type: file\
-\      target: ../../org.yaml\
-\      rules:\
-\        - allow: [Group, User]' $(BACKSTAGE_APP_DIR)/app-config.yaml; \
-		echo "$(GREEN)Org data registrada en app-config.yaml$(NC)"; \
-	else \
-		echo "$(YELLOW)Org data ya registrada$(NC)"; \
-	fi
+	@$(PYTHON) register-templates.py $(BACKSTAGE_APP_DIR)/app-config.yaml
 	@echo "$(GREEN)Templates copiados y configurados$(NC)"
 
 ## Verificar
@@ -77,17 +54,27 @@ verify:
 	@if [ -f "../shared/templates/nodejs-service/template.yaml" ]; then \
 		echo "$(GREEN)✓$(NC) Template Node.js disponible en: shared/templates/nodejs-service/"; \
 	else \
-		echo "$(RED)✗$(NC) Template no encontrado"; \
+		echo "$(RED)✗$(NC) Template Node.js no encontrado"; \
 	fi
-	@if [ -d "$(BACKSTAGE_APP_DIR)/templates/nodejs-service" ]; then \
+	@if [ -f "../shared/templates/backstage-skeleton/template.yaml" ]; then \
+		echo "$(GREEN)✓$(NC) Template Backstage Skeleton disponible en: shared/templates/backstage-skeleton/"; \
+	else \
+		echo "$(RED)✗$(NC) Template Backstage Skeleton no encontrado"; \
+	fi
+	@if [ -d "$(BACKSTAGE_APP_DIR)/templates/nodejs-service" ] && [ -d "$(BACKSTAGE_APP_DIR)/templates/backstage-skeleton" ]; then \
 		echo "$(GREEN)✓$(NC) Templates copiados al proyecto Backstage"; \
 	else \
 		echo "$(YELLOW)⏳$(NC) Templates pendientes (ejecuta: make configure)"; \
 	fi
 	@if grep -q "nodejs-service/template.yaml" $(BACKSTAGE_APP_DIR)/app-config.yaml 2>/dev/null; then \
-		echo "$(GREEN)✓$(NC) Template registrado en app-config.yaml"; \
+		echo "$(GREEN)✓$(NC) Template Node.js registrado en app-config.yaml"; \
 	else \
-		echo "$(YELLOW)⏳$(NC) Template no registrado en app-config.yaml"; \
+		echo "$(YELLOW)⏳$(NC) Template Node.js no registrado en app-config.yaml"; \
+	fi
+	@if grep -q "backstage-skeleton/template.yaml" $(BACKSTAGE_APP_DIR)/app-config.yaml 2>/dev/null; then \
+		echo "$(GREEN)✓$(NC) Template Backstage Skeleton registrado en app-config.yaml"; \
+	else \
+		echo "$(YELLOW)⏳$(NC) Template Backstage Skeleton no registrado en app-config.yaml"; \
 	fi
 
 ## Limpiar

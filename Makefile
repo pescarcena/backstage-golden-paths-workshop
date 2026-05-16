@@ -72,6 +72,10 @@ start-backstage:
 step-03:
 	@echo "$(BLUE)$(BOLD)>>> Paso 03: Golden Paths (MODE=$(MODE))$(NC)"
 	@$(MAKE) -C 03-golden-paths all MODE=$(MODE)
+	@if [ "$(MODE)" = "local" ]; then \
+		echo "$(YELLOW)Reiniciando Backstage para aplicar templates...$(NC)"; \
+		$(MAKE) --no-print-directory tmux-restart-backstage; \
+	fi
 
 ## Paso 04: Configurar plugin de Kubernetes en Backstage
 step-04:

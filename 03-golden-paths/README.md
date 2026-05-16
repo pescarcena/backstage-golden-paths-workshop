@@ -9,7 +9,11 @@ En este paso configuramos los **Software Templates** (Golden Paths) en Backstage
 | **Kubernetes** | Registra templates via ConfigMap + Deployment patch | `make all MODE=k8s` |
 | **Local** | Registra templates via paths locales en app-config | `make all MODE=local` |
 
-Los archivos del template (template.yaml + skeleton/) son compartidos entre ambos modos y se encuentran en `shared/templates/`.
+Los archivos de los templates (template.yaml + skeleton/) son compartidos entre ambos modos y se encuentran en `shared/templates/`.
+
+Disponemos de dos templates:
+- **nodejs-service** — Servicio Node.js con Express + Dockerfile
+- **backstage-skeleton** — App estatica con Helm + ArgoCD (Golden Path Traditional)
 
 ## Kubernetes (default)
 

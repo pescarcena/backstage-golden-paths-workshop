@@ -1,0 +1,82 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+
+metadata:
+  name: golden-path-traditional
+  title: Golden Path Traditional App
+  description: Despliegue automatizado con GitHub Actions + Helm + ArgoCD
+
+spec:
+  owner: platform-team
+  type: service
+
+  parameters:
+    - title: Despliegue automatizado tradicional con Backstage
+      required:
+        - appName
+        - githubOrg
+        - repoName
+
+      properties:
+
+        appName:
+          title: Nombre de la aplicación
+          type: string
+
+        githubOrg:
+          title: Organización GitHub
+          type: string
+
+        repoName:
+          title: Nombre del repositorio
+          type: string
+
+        namespace:
+          title: Namespace Kubernetes
+          type: string
+          default: default
+
+  steps:
+
+    - id: fetch-base
+      name: Descargar Skeleton
+      action: fetch:template
+
+      input:
+        url: ./skeleton
+
+        values:
+          appName: ${{ parameters.appName }}
+          githubOrg: ${{ parameters.githubOrg }}
+          repoName: ${{ parameters.repoName }}
+          namespace: ${{ parameters.namespace }}
+
+    - id: publish
+      name: Publicar en GitHub
+      action: publish:github
+
+      input:
+        allowedHosts:
+          - github.com
+
+        description: Golden Path generado desde Backstage
+
+        repoUrl: github.com?owner=${{ parameters.githubOrg }}&repo=${{ parameters.repoName }}
+
+        defaultBranch: main
+
+    - id: register
+      name: Registrar en Backstage
+      action: catalog:register
+
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Repositorio GitHub
+        url: ${{ steps.publish.output.remoteUrl }}
+
+      - title: Abrir en Backstage
+        entityRef: ${{ steps.register.output.entityRef }}

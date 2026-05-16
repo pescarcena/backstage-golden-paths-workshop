@@ -1,0 +1,10 @@
+replicaCount: 1
+app:
+  name: ${{ values.appName }}
+image:
+  repository: ${{ values.githubOrg }}/${{ values.repoName }}
+  tag: latest
+containerPort: 80
+service:
+  port: 8090
+  targetPort: 80
