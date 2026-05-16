@@ -1,0 +1,42 @@
+# =============================================================================
+# Patch al ConfigMap argocd-rbac-cm: mapea grupos de Keycloak a roles de ArgoCD
+# =============================================================================
+# ArgoCD usa su propio sistema RBAC independiente de Kubernetes.
+# Este ConfigMap conecta los grupos OIDC (Keycloak) con los permisos de ArgoCD.
+#
+# Roles built-in de ArgoCD:
+#   role:admin    -> acceso total
+#   role:readonly -> solo lectura
+#
+# Politica custom:
+#   role:developer -> get/sync solo en proyecto team-dev
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+data:
+  # Mapeo de grupos OIDC a roles de ArgoCD
+  policy.csv: |
+    # Rol custom: developer
+    # Puede ver y sincronizar apps SOLO del proyecto team-dev
+    p, role:developer, applications, get, team-dev/*, allow
+    p, role:developer, applications, sync, team-dev/*, allow
+    p, role:developer, applications, create, team-dev/*, allow
+    p, role:developer, logs, get, team-dev/*, allow
+
+    # Puede ver (no modificar) apps del proyecto team-platform
+    p, role:developer, applications, get, team-platform/*, allow
+
+    # Mapeo: grupo Keycloak "developers" -> rol ArgoCD "developer"
+    g, developers, role:developer
+
+    # Mapeo: grupo Keycloak "platform-team" -> rol built-in "admin"
+    g, platform-team, role:admin
+
+  # Politica por defecto para usuarios autenticados sin grupo
+  policy.default: role:readonly
+
+  # Habilitar los grupos del token OIDC
+  scopes: '[groups]'

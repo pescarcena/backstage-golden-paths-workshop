@@ -1,0 +1,24 @@
+# =============================================================================
+# App de demo: despliega nginx en apps-dev (proyecto team-dev)
+# Esta app FUNCIONA para dev-user porque el destino es apps-dev
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-nginx-dev
+  namespace: argocd
+spec:
+  project: team-dev
+  source:
+    repoURL: https://github.com/argoproj/argocd-example-apps.git
+    targetRevision: HEAD
+    path: guestbook
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: apps-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

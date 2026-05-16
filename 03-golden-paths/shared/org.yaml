@@ -1,0 +1,45 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-team
+  description: Equipo de plataforma
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: developers
+  description: Equipo de desarrollo
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: admin-user
+spec:
+  profile:
+    displayName: Admin User
+    email: admin@workshop.local
+  memberOf: [platform-team]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: dev-user
+spec:
+  profile:
+    displayName: Dev User
+    email: dev@workshop.local
+  memberOf: [developers]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: guest
+spec:
+  memberOf: [developers]

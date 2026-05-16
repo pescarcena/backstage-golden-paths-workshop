@@ -1,0 +1,28 @@
+# =============================================================================
+# Configuracion de autenticacion para Backstage en modo local
+# Keycloak corre en localhost:8180 via Docker Compose
+# =============================================================================
+
+auth:
+  environment: development
+  session:
+    secret: ${AUTH_SESSION_SECRET:-workshop-session-secret-change-in-production}
+  providers:
+    oidc:
+      development:
+        metadataUrl: http://localhost:8180/realms/backstage/.well-known/openid-configuration
+        clientId: backstage
+        clientSecret: ${KEYCLOAK_CLIENT_SECRET:-backstage-workshop-secret}
+        prompt: auto
+        signIn:
+          resolvers:
+            - resolver: emailMatchingUserEntityProfileEmail
+              dangerouslyAllowSignInWithoutUserInCatalog: true
+  signInPage: oidc
+
+catalog:
+  locations:
+    - type: file
+      target: ../../08-rbac-multi-capa/shared/org.yaml
+      rules:
+        - allow: [User, Group]

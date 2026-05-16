@@ -1,0 +1,44 @@
+# =============================================================================
+# ArgoCD AppProjects: restringen a que namespaces puede desplegar cada equipo
+# =============================================================================
+---
+# Proyecto para developers: solo puede desplegar en apps-dev
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: team-dev
+  namespace: argocd
+spec:
+  description: Proyecto para el equipo de desarrollo - solo namespace apps-dev
+  sourceRepos:
+    - '*'
+  destinations:
+    # SOLO puede desplegar en apps-dev
+    - namespace: apps-dev
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: '*'
+    - group: apps
+      kind: '*'
+---
+# Proyecto para platform-team: puede desplegar en cualquier namespace
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: team-platform
+  namespace: argocd
+spec:
+  description: Proyecto para platform-team - acceso completo
+  sourceRepos:
+    - '*'
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

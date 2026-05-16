@@ -1,0 +1,49 @@
+# =============================================================================
+# Configuracion de autenticacion para Backstage (modo K8s)
+# Keycloak corre en el cluster como Service (keycloak.keycloak.svc:8080)
+# =============================================================================
+
+# --- OPCION A: GitHub OAuth ---
+# Requiere crear una OAuth App en GitHub:
+# https://github.com/settings/developers > OAuth Apps > New OAuth App
+#
+# Application name: Backstage Workshop
+# Homepage URL: http://localhost:30000
+# Authorization callback URL: http://localhost:30000/api/auth/github/handler/frame
+
+auth:
+  environment: development
+
+  # Secreto de sesion (requerido para OIDC y otros providers con sesion)
+  session:
+    secret: ${AUTH_SESSION_SECRET}
+
+  signInPage: oidc
+  providers:
+    github:
+      development:
+        clientId: ${GITHUB_OAUTH_CLIENT_ID}
+        clientSecret: ${GITHUB_OAUTH_CLIENT_SECRET}
+        # Opcional: restringir a una organizacion
+        # enterpriseInstanceUrl: https://github.yourcompany.com
+        signIn:
+          resolvers:
+            # Mapea el username de GitHub a una entidad del catalogo
+            - resolver: usernameMatchingUserEntityName
+
+    # --- OPCION B: Keycloak (OIDC) ---
+    # NOTA: No usar 'scope' (deprecado). Los scopes basicos se envian automaticamente.
+    # Los resolvers validos para OIDC son:
+    #   - emailMatchingUserEntityProfileEmail
+    #   - emailLocalPartMatchingUserEntityName
+    oidc:
+      development:
+        metadataUrl: http://keycloak.keycloak.svc:8080/realms/backstage/.well-known/openid-configuration
+        clientId: backstage
+        clientSecret: ${KEYCLOAK_CLIENT_SECRET}
+        prompt: auto
+        signIn:
+          resolvers:
+            - resolver: emailMatchingUserEntityProfileEmail
+              options:
+                dangerouslyAllowSignInWithoutUserInCatalog: true

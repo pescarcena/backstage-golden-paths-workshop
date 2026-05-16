@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: apps-dev
+  labels:
+    team: developers
+    purpose: workloads
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: apps-platform
+  labels:
+    team: platform-team
+    purpose: workloads

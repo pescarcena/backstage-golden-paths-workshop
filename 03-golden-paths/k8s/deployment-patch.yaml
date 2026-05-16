@@ -1,0 +1,38 @@
+# =============================================================================
+# Strategic merge patch para el Deployment de Backstage
+# Agrega un init container que arma la estructura de directorios del template
+# y monta los templates en el contenedor principal
+# =============================================================================
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: setup-templates
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /templates/nodejs-service/skeleton/src
+              cp /tpl-data/template.yaml /templates/nodejs-service/
+              cp /tpl-data/skeleton-package.json /templates/nodejs-service/skeleton/package.json
+              cp /tpl-data/skeleton-Dockerfile /templates/nodejs-service/skeleton/Dockerfile
+              cp /tpl-data/skeleton-catalog-info.yaml /templates/nodejs-service/skeleton/catalog-info.yaml
+              cp /tpl-data/skeleton-src-index.js /templates/nodejs-service/skeleton/src/index.js
+          volumeMounts:
+            - name: tpl-data
+              mountPath: /tpl-data
+            - name: templates
+              mountPath: /templates
+      containers:
+        - name: backstage
+          volumeMounts:
+            - name: templates
+              mountPath: /app/templates
+              readOnly: true
+      volumes:
+        - name: tpl-data
+          configMap:
+            name: backstage-templates
+        - name: templates
+          emptyDir: {}

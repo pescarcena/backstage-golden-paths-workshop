@@ -1,0 +1,24 @@
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+LICENSE
+
+# IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+**/local/backstage-app/
+
+# Env files
+**/.env
+
+# Logs
+*.log

@@ -1,0 +1,30 @@
+# =============================================================================
+# Dockerfile para Backstage con soporte OIDC (Keycloak)
+# Extiende la imagen oficial agregando el modulo OIDC y la sign-in page custom
+# =============================================================================
+#
+# Uso:
+#   docker build -f Dockerfile.backstage -t backstage-workshop:oidc .
+#   kind load docker-image backstage-workshop:oidc --name backstage-workshop
+#
+# Este Dockerfile:
+# 1. Parte de la imagen oficial de Backstage
+# 2. Instala @backstage/plugin-auth-backend-module-oidc-provider
+# 3. Registra el modulo en el backend
+# =============================================================================
+
+FROM ghcr.io/backstage/backstage:1.35.0
+
+# Instalar el modulo OIDC en el backend
+USER root
+WORKDIR /app
+
+# Agregar dependencia del modulo OIDC
+RUN --mount=type=cache,target=/home/node/.cache/yarn \
+    yarn --cwd packages/backend add @backstage/plugin-auth-backend-module-oidc-provider
+
+# Registrar el modulo OIDC en el backend (agregar despues del guest-provider)
+RUN sed -i '/plugin-auth-backend-module-guest-provider/a backend.add(import("@backstage/plugin-auth-backend-module-oidc-provider"));' \
+    packages/backend/src/index.ts || true
+
+USER node

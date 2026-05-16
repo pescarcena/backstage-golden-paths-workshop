@@ -1,0 +1,31 @@
+# =============================================================================
+# Configuracion del cluster Kind para el workshop
+# 1 control-plane + 2 workers
+# Gateway API se gestiona via cloud-provider-kind (no necesita port mappings 80/443)
+# =============================================================================
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: backstage-workshop
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # NodePort range - para acceso directo a servicios
+      # (Backstage: 30000, ArgoCD: 30002-30003, Keycloak: 30004)
+      - containerPort: 30000
+        hostPort: 30000
+        protocol: TCP
+      - containerPort: 30001
+        hostPort: 30001
+        protocol: TCP
+      - containerPort: 30002
+        hostPort: 30002
+        protocol: TCP
+      - containerPort: 30003
+        hostPort: 30003
+        protocol: TCP
+      - containerPort: 30004
+        hostPort: 30004
+        protocol: TCP
+  # Workers para distribuir la carga
+  - role: worker
+  - role: worker

@@ -1,0 +1,7 @@
+# =============================================================================
+# Configuracion del plugin ArgoCD para Backstage en modo local
+# Conecta via NodePort (localhost:30003) en lugar de URL in-cluster
+# =============================================================================
+
+argocd:
+  baseUrl: https://localhost:30003

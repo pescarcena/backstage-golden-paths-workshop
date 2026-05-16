@@ -1,0 +1,56 @@
+# =============================================================================
+# Ejemplo de Application CR de ArgoCD
+# Este recurso le dice a ArgoCD que sincronice un repo Git con el cluster
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ejemplo-nodejs-service
+  namespace: argocd
+  # Finalizer para que ArgoCD limpie recursos al eliminar la Application
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/part-of: workshop
+spec:
+  # Proyecto de ArgoCD (default para este workshop)
+  project: default
+
+  # Fuente: de donde viene la configuracion
+  source:
+    # URL del repositorio Git
+    repoURL: https://github.com/TU-ORG/mi-servicio.git
+    # Rama a seguir
+    targetRevision: main
+    # Directorio dentro del repo donde estan los manifiestos
+    path: k8s
+
+  # Destino: donde se despliega
+  destination:
+    # El cluster local (donde corre ArgoCD)
+    server: https://kubernetes.default.svc
+    # Namespace donde desplegar la aplicacion
+    namespace: default
+
+  # Politica de sincronizacion
+  syncPolicy:
+    # Sincronizar automaticamente cuando hay cambios en Git
+    automated:
+      # Eliminar recursos que ya no estan en Git
+      prune: true
+      # Corregir drift (cambios manuales en el cluster)
+      selfHeal: true
+    # Opciones de sincronizacion
+    syncOptions:
+      # Crear el namespace si no existe
+      - CreateNamespace=true
+      # Validar los manifiestos antes de aplicar
+      - Validate=true
+
+    # Reintentar si falla
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

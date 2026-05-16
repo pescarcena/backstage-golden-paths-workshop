@@ -1,0 +1,26 @@
+# =============================================================================
+# App de demo: intenta desplegar en apps-platform (proyecto team-dev)
+# Esta app FALLA para dev-user porque team-dev no permite apps-platform
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-nginx-platform
+  namespace: argocd
+spec:
+  # Usa team-dev a proposito: el developer intenta desplegar fuera de su zona
+  project: team-dev
+  source:
+    repoURL: https://github.com/argoproj/argocd-example-apps.git
+    targetRevision: HEAD
+    path: guestbook
+  destination:
+    server: https://kubernetes.default.svc
+    # apps-platform NO esta permitido en team-dev -> ArgoCD rechaza
+    namespace: apps-platform
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

@@ -1,0 +1,205 @@
+# =============================================================================
+# ConfigMap con la configuracion del Realm de Keycloak para Backstage
+# Se importa automaticamente al iniciar Keycloak
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm
+  namespace: keycloak
+data:
+  backstage-realm.json: |
+    {
+      "realm": "backstage",
+      "enabled": true,
+      "displayName": "Backstage Workshop",
+      "sslRequired": "none",
+      "registrationAllowed": true,
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "resetPasswordAllowed": true,
+      "editUsernameAllowed": false,
+      "bruteForceProtected": true,
+      "roles": {
+        "realm": [
+          {
+            "name": "backstage-admin",
+            "description": "Administradores de Backstage"
+          },
+          {
+            "name": "backstage-user",
+            "description": "Usuarios regulares de Backstage"
+          }
+        ]
+      },
+      "groups": [
+        {
+          "name": "platform-team",
+          "realmRoles": ["backstage-admin"]
+        },
+        {
+          "name": "developers",
+          "realmRoles": ["backstage-user"]
+        }
+      ],
+      "users": [
+        {
+          "username": "admin-user",
+          "enabled": true,
+          "email": "admin@workshop.local",
+          "firstName": "Admin",
+          "lastName": "User",
+          "credentials": [
+            {
+              "type": "password",
+              "value": "admin123",
+              "temporary": false
+            }
+          ],
+          "realmRoles": ["backstage-admin"],
+          "groups": ["platform-team"]
+        },
+        {
+          "username": "dev-user",
+          "enabled": true,
+          "email": "dev@workshop.local",
+          "firstName": "Dev",
+          "lastName": "User",
+          "credentials": [
+            {
+              "type": "password",
+              "value": "dev123",
+              "temporary": false
+            }
+          ],
+          "realmRoles": ["backstage-user"],
+          "groups": ["developers"]
+        }
+      ],
+      "clients": [
+        {
+          "clientId": "backstage",
+          "name": "Backstage",
+          "enabled": true,
+          "publicClient": false,
+          "secret": "backstage-workshop-secret",
+          "redirectUris": [
+            "http://localhost:3000/*",
+            "http://localhost:7007/*",
+            "http://localhost:30000/*",
+            "http://backstage.local/*"
+          ],
+          "webOrigins": [
+            "http://localhost:3000",
+            "http://localhost:7007",
+            "http://localhost:30000",
+            "http://backstage.local"
+          ],
+          "protocol": "openid-connect",
+          "standardFlowEnabled": true,
+          "directAccessGrantsEnabled": true,
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "email"
+          ]
+        }
+      ],
+      "clientScopes": [
+        {
+          "name": "profile",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true",
+            "display.on.consent.screen": "true"
+          },
+          "protocolMappers": [
+            {
+              "name": "preferred_username",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-attribute-mapper",
+              "config": {
+                "user.attribute": "username",
+                "claim.name": "preferred_username",
+                "jsonType.label": "String",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            },
+            {
+              "name": "given_name",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-attribute-mapper",
+              "config": {
+                "user.attribute": "firstName",
+                "claim.name": "given_name",
+                "jsonType.label": "String",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            },
+            {
+              "name": "family_name",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-attribute-mapper",
+              "config": {
+                "user.attribute": "lastName",
+                "claim.name": "family_name",
+                "jsonType.label": "String",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true",
+            "display.on.consent.screen": "true"
+          },
+          "protocolMappers": [
+            {
+              "name": "email",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-attribute-mapper",
+              "config": {
+                "user.attribute": "email",
+                "claim.name": "email",
+                "jsonType.label": "String",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        },
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true"
+          },
+          "protocolMappers": [
+            {
+              "name": "groups",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-group-membership-mapper",
+              "config": {
+                "full.path": "false",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "groups",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        }
+      ]
+    }

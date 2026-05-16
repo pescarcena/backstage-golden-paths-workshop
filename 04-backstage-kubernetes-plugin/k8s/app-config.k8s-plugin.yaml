@@ -1,0 +1,22 @@
+# =============================================================================
+# Configuracion de Backstage con el plugin de Kubernetes
+# Este archivo se fusiona con el app-config.yaml base
+# =============================================================================
+
+kubernetes:
+  # Tipo de localizador de servicios: usa las anotaciones del catalogo
+  serviceLocatorMethod:
+    type: 'multiTenant'
+
+  # Clusters a los que Backstage se conecta
+  clusterLocatorMethods:
+    - type: 'config'
+      clusters:
+        - name: backstage-workshop
+          url: https://kubernetes.default.svc
+          authProvider: 'serviceAccount'
+          # Usar el ServiceAccount de Backstage (ya creado en paso 02)
+          skipTLSVerify: true
+          skipMetricsLookup: true
+          # Namespaces que Backstage puede leer
+          dashboardApp: standard

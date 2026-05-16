@@ -1,0 +1,62 @@
+# =============================================================================
+# RBAC para que Backstage pueda leer recursos de Kubernetes
+# =============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: backstage-kubernetes-reader
+rules:
+  # Principio de minimo privilegio: solo los recursos que el plugin de Kubernetes
+  # de Backstage necesita leer. No incluimos secrets, configmaps ni otros
+  # recursos sensibles para reducir la superficie de ataque.
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/log
+      - services
+      - namespaces
+    verbs: ["get", "list", "watch"]
+  # Deployments, ReplicaSets, etc.
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - statefulsets
+      - daemonsets
+    verbs: ["get", "list", "watch"]
+  # Jobs y CronJobs
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: ["get", "list", "watch"]
+  # Ingress y networking
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+    verbs: ["get", "list", "watch"]
+  # Gateway API
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources:
+      - gateways
+      - httproutes
+      - grpcroutes
+    verbs: ["get", "list", "watch"]
+  # HPA
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: backstage-kubernetes-reader
+subjects:
+  - kind: ServiceAccount
+    name: backstage
+    namespace: backstage
+roleRef:
+  kind: ClusterRole
+  name: backstage-kubernetes-reader
+  apiGroup: rbac.authorization.k8s.io

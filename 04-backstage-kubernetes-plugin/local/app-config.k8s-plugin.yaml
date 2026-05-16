@@ -1,0 +1,10 @@
+# =============================================================================
+# Configuracion del plugin de Kubernetes para Backstage en modo local
+# Usa localKubectlProxy o kubeconfig para autenticarse con el cluster Kind
+# =============================================================================
+
+kubernetes:
+  serviceLocatorMethod:
+    type: 'multiTenant'
+  clusterLocatorMethods:
+    - type: 'localKubectlProxy'

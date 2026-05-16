@@ -1,0 +1,24 @@
+# =============================================================================
+# Patch al ConfigMap argocd-cm: conectar ArgoCD con Keycloak via OIDC
+# =============================================================================
+# Esto permite que los usuarios de Keycloak hagan login en ArgoCD
+# y que ArgoCD use los mismos grupos para aplicar RBAC.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  # Configuracion OIDC para Keycloak
+  url: https://localhost:30003
+  oidc.config: |
+    name: Keycloak
+    issuer: http://keycloak.keycloak.svc:8080/realms/backstage
+    clientID: backstage
+    clientSecret: backstage-workshop-secret
+    requestedScopes:
+      - openid
+      - profile
+      - email
+      - groups

@@ -1,0 +1,115 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: nodejs-service
+  title: Servicio Node.js
+  description: Crea un nuevo servicio Node.js con Express, Dockerfile y configuracion para Kubernetes
+  tags:
+    - nodejs
+    - express
+    - recomendado
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+spec:
+  owner: platform-team
+  type: service
+
+  # Parametros que el usuario llena en el formulario
+  parameters:
+    - title: Informacion del servicio
+      required:
+        - name
+        - owner
+      properties:
+        name:
+          title: Nombre del servicio
+          type: string
+          description: Nombre unico del servicio (ej. mi-api, user-service)
+          ui:autofocus: true
+          ui:options:
+            rows: 5
+          pattern: "^[a-z0-9-]+$"
+        description:
+          title: Descripcion
+          type: string
+          description: Breve descripcion de lo que hace el servicio
+        owner:
+          title: Equipo propietario
+          type: string
+          description: Equipo responsable del servicio
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: Group
+
+    - title: Configuracion tecnica
+      properties:
+        port:
+          title: Puerto del servicio
+          type: number
+          default: 3000
+          description: Puerto HTTP donde escuchara el servicio
+        nodeVersion:
+          title: Version de Node.js
+          type: string
+          default: "20"
+          enum:
+            - "18"
+            - "20"
+            - "22"
+          description: Version de Node.js para el Dockerfile
+
+    - title: Repositorio
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: URL del repositorio
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  # Pasos que ejecuta Backstage al crear el servicio
+  steps:
+    # 1. Generar archivos desde el skeleton
+    - id: fetch-skeleton
+      name: Generar archivos del servicio
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          port: ${{ parameters.port }}
+          nodeVersion: ${{ parameters.nodeVersion }}
+
+    # 2. Publicar en GitHub
+    - id: publish
+      name: Publicar en GitHub
+      action: publish:github
+      input:
+        allowedHosts: ['github.com']
+        repoUrl: ${{ parameters.repoUrl }}
+        description: ${{ parameters.description }}
+        repoVisibility: public
+        defaultBranch: main
+
+    # 3. Registrar en el catalogo de Backstage
+    - id: register
+      name: Registrar en el catalogo
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  # Output al usuario
+  output:
+    links:
+      - title: Repositorio
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Ver en el catalogo
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

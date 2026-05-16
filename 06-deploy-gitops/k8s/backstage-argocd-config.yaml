@@ -1,0 +1,29 @@
+# =============================================================================
+# Configuracion de Backstage para el plugin de ArgoCD
+# Fusionar con el app-config.yaml existente
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backstage-argocd-config
+  namespace: backstage
+data:
+  app-config-argocd.yaml: |
+    # Configuracion del plugin de ArgoCD para Backstage
+    argocd:
+      # URL de ArgoCD (accesible desde dentro del cluster)
+      baseUrl: http://argocd-server.argocd.svc:80
+      # Tambien puedes usar la URL externa
+      # baseUrl: https://localhost:30002
+
+    # Ejemplo de como agregar anotaciones de ArgoCD a una entidad del catalogo:
+    #
+    # apiVersion: backstage.io/v1alpha1
+    # kind: Component
+    # metadata:
+    #   name: mi-servicio
+    #   annotations:
+    #     argocd/app-name: mi-servicio          # Nombre de la Application en ArgoCD
+    #     # O multiples apps:
+    #     # argocd/app-name: app1, app2
+    #     backstage.io/kubernetes-id: mi-servicio

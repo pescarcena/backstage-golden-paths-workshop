@@ -1,0 +1,62 @@
+# =============================================================================
+# ConfigMap actualizado con la ubicacion del Software Template
+# Reemplaza el ConfigMap del paso 02 agregando la referencia al template
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backstage-app-config
+  namespace: backstage
+data:
+  app-config.yaml: |
+    app:
+      title: Workshop Golden Paths
+      baseUrl: http://localhost:30000
+
+    organization:
+      name: Workshop Golden Paths
+
+    backend:
+      baseUrl: http://localhost:30000
+      listen:
+        port: 7007
+      csp:
+        connect-src: ["'self'", 'http:', 'https:']
+      cors:
+        origin: http://localhost:30000
+        methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
+        credentials: true
+      auth:
+        keys:
+          - secret: ${BACKSTAGE_BACKEND_SECRET}
+      database:
+        client: pg
+        connection:
+          host: postgres
+          port: 5432
+          user: ${POSTGRES_USER}
+          password: ${POSTGRES_PASSWORD}
+
+    auth:
+      providers:
+        guest:
+          dangerouslyAllowOutsideDevelopment: true
+
+    catalog:
+      import:
+        entityFilename: catalog-info.yaml
+        pullRequestBranchName: backstage-integration
+      rules:
+        - allow: [Component, System, API, Resource, Location, Template]
+      locations:
+        - type: file
+          target: /app/templates/nodejs-service/template.yaml
+          rules:
+            - allow: [Template]
+
+    techdocs:
+      builder: 'local'
+      generator:
+        runIn: 'local'
+      publisher:
+        type: 'local'

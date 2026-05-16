@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backstage-app-config
+  namespace: backstage
+data:
+  app-config.yaml: |
+    app:
+      title: Workshop Golden Paths
+      baseUrl: http://localhost:30000
+
+    organization:
+      name: Workshop Golden Paths
+
+    backend:
+      baseUrl: http://localhost:30000
+      listen:
+        port: 7007
+      csp:
+        connect-src: ["'self'", 'http:', 'https:']
+      cors:
+        origin: http://localhost:30000
+        methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
+        credentials: true
+      auth:
+        keys:
+          - secret: ${BACKSTAGE_BACKEND_SECRET}
+      database:
+        client: pg
+        connection:
+          host: postgres
+          port: 5432
+          user: ${POSTGRES_USER}
+          password: ${POSTGRES_PASSWORD}
+
+    auth:
+      providers:
+        guest:
+          # ATENCION: Solo para workshop/desarrollo. Deshabilitar en produccion.
+          dangerouslyAllowOutsideDevelopment: true
+
+    catalog:
+      import:
+        entityFilename: catalog-info.yaml
+        pullRequestBranchName: backstage-integration
+      rules:
+        - allow: [Component, System, API, Resource, Location, Template]
+      locations: []
+
+    techdocs:
+      builder: 'local'
+      generator:
+        runIn: 'local'
+      publisher:
+        type: 'local'
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backstage
+  namespace: backstage
+  labels:
+    app: backstage
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backstage
+  namespace: backstage
+  labels:
+    app: backstage
+    app.kubernetes.io/part-of: backstage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backstage
+  template:
+    metadata:
+      labels:
+        app: backstage
+    spec:
+      serviceAccountName: backstage
+      containers:
+        - name: backstage
+          image: ghcr.io/backstage/backstage:1.35.0
+          ports:
+            - containerPort: 7007
+              name: http
+          envFrom:
+            - secretRef:
+                name: postgres-secrets
+          volumeMounts:
+            - name: app-config
+              mountPath: /app/app-config.yaml
+              subPath: app-config.yaml
+              readOnly: true
+          command: ["node", "packages/backend"]
+          args:
+            - "--config"
+            - "/app/app-config.yaml"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 7007
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 7007
+            initialDelaySeconds: 60
+            periodSeconds: 30
+      volumes:
+        - name: app-config
+          configMap:
+            name: backstage-app-config

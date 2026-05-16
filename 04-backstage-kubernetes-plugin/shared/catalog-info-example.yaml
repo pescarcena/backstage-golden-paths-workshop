@@ -1,0 +1,25 @@
+# =============================================================================
+# Ejemplo de entidad del catalogo con anotaciones para el plugin de Kubernetes
+# =============================================================================
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: mi-servicio-ejemplo
+  description: Servicio de ejemplo para demostrar el plugin de Kubernetes
+  annotations:
+    # Esta anotacion conecta la entidad del catalogo con los recursos de K8s
+    # Backstage buscara pods/deployments con el label: backstage.io/kubernetes-id=mi-servicio-ejemplo
+    backstage.io/kubernetes-id: mi-servicio-ejemplo
+
+    # Alternativa: buscar por namespace
+    # backstage.io/kubernetes-namespace: default
+
+    # Alternativa: buscar por label selector personalizado
+    # backstage.io/kubernetes-label-selector: 'app=mi-servicio-ejemplo'
+  tags:
+    - nodejs
+    - ejemplo
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
