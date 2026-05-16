@@ -58,10 +58,10 @@ Este workshop usa **Gateway API** en lugar del antiguo Ingress Controller (NGINX
 ## Prerequisitos
 
 - Docker funcionando (`docker version`)
-- Herramientas instaladas: `kind`, `kubectl`, `helm`, `cloud-provider-kind`
+- Herramientas instaladas: `kind`, `kubectl`, `helm`, `cloud-provider-kind`, `tmux`
 
 > **Primera vez?** Consulta la guia de instalacion de tu SO:
-> - **macOS:** `brew install kind kubectl helm cloud-provider-kind`
+> - **macOS:** `brew install kind kubectl helm cloud-provider-kind tmux`
 > - **Linux:** [docs/setup-linux.md](../docs/setup-linux.md)
 > - **Windows:** [docs/setup-windows.md](../docs/setup-windows.md)
 
@@ -104,7 +104,7 @@ helm version
 ```
 
 > Si alguna no esta instalada, consulta la guia de tu SO:
-> - **macOS:** `brew install kind kubectl helm cloud-provider-kind`
+> - **macOS:** `brew install kind kubectl helm cloud-provider-kind tmux`
 > - **Linux:** [docs/setup-linux.md](../docs/setup-linux.md)
 > - **Windows:** [docs/setup-windows.md](../docs/setup-windows.md)
 

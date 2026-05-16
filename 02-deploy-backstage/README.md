@@ -25,7 +25,7 @@ Corre PostgreSQL via Docker Compose y Backstage localmente con `yarn start`. Acc
 
 - Paso 01 completado (cluster Kind funcionando)
 - **Modo K8s**: Solo kubectl
-- **Modo Local**: Node.js 20+, Docker
+- **Modo Local**: Node.js 20+, Docker, tmux
 
 ---
 

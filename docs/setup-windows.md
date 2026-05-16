@@ -103,7 +103,9 @@ echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-### tmux (opcional, para servicios en background)
+### tmux
+
+El workshop usa tmux para mantener servicios en background (cloud-provider-kind, kubectl proxy, Backstage).
 
 ```bash
 sudo apt-get install -y tmux
@@ -142,6 +144,7 @@ kind version
 kubectl version --client
 helm version
 make --version
+tmux -V
 node --version   # Solo si vas a usar modo local
 ```
 

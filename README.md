@@ -42,7 +42,7 @@ Ambos modos usan el cluster Kind para workloads (K8s plugin, ArgoCD).
 ### Ambos modos
 - **Sistema operativo:** macOS, Linux o Windows (via WSL2)
 - **Docker** funcionando (OrbStack/Docker Desktop/Docker Engine)
-- **Kind**, **kubectl**, **Helm** instalados
+- **Kind**, **kubectl**, **Helm**, **tmux** instalados
 - **Cuenta de GitHub** (para el paso de autenticacion)
 - ~8 GB de RAM disponible
 - ~10 GB de espacio en disco
@@ -51,7 +51,7 @@ Ambos modos usan el cluster Kind para workloads (K8s plugin, ArgoCD).
 
 | SO | Guia de instalacion | Runtime de contenedores |
 |----|---------------------|------------------------|
-| **macOS** | Homebrew: `brew install kind kubectl helm` | [OrbStack](https://orbstack.dev) (recomendado) o Docker Desktop |
+| **macOS** | Homebrew: `brew install kind kubectl helm tmux` | [OrbStack](https://orbstack.dev) (recomendado) o Docker Desktop |
 | **Linux** | [docs/setup-linux.md](docs/setup-linux.md) | Docker Engine (nativo) |
 | **Windows** | [docs/setup-windows.md](docs/setup-windows.md) | Docker Desktop + WSL2 |
 

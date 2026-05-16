@@ -120,7 +120,9 @@ go install sigs.k8s.io/cloud-provider-kind@latest
 
 > **Nota:** En Linux, `cloud-provider-kind` puede requerir `sudo` dependiendo de la configuracion de Docker.
 
-## 6. tmux (opcional, para servicios en background)
+## 6. tmux
+
+El workshop usa tmux para mantener servicios en background (cloud-provider-kind, kubectl proxy, Backstage).
 
 ```bash
 # Ubuntu/Debian
@@ -173,6 +175,7 @@ docker version
 kind version
 kubectl version --client
 helm version
+tmux -V
 ```
 
 Si todo responde correctamente, continua con el [Paso 01: Kubernetes Local](../01-kubernetes-local/).

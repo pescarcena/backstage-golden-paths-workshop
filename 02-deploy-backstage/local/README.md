@@ -7,6 +7,7 @@ En este modo, Backstage corre localmente en tu maquina usando `yarn start`, con 
 - Paso 01 completado (cluster Kind funcionando)
 - **Node.js 20+** (`node --version`)
 - **Docker** corriendo (para PostgreSQL)
+- **tmux** instalado
 
 ## Modo automatico
 

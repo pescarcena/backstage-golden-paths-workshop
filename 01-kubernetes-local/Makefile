@@ -125,8 +125,9 @@ install-gateway:
 		echo "$(GREEN)cloud-provider-kind lanzado en tmux (sesion: $(TMUX_SESSION), ventana: cloud-provider)$(NC)"; \
 		echo "$(YELLOW)Si necesitas ingresar password sudo: tmux attach -t $(TMUX_SESSION):cloud-provider$(NC)"; \
 	else \
-		echo "$(YELLOW)⚠ cloud-provider-kind NO esta corriendo.$(NC)"; \
-		echo "$(YELLOW)  Ejecuta en otra terminal: sudo cloud-provider-kind --gateway-channel standard$(NC)"; \
+		echo "$(RED)Error: tmux no esta instalado y cloud-provider-kind no esta corriendo.$(NC)"; \
+		echo "$(YELLOW)Instala tmux: macOS: brew install tmux | Linux/WSL2: sudo apt-get install tmux$(NC)"; \
+		exit 1; \
 	fi
 
 ## Verificar que todo esta funcionando

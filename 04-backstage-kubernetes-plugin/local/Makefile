@@ -59,7 +59,9 @@ configure:
 		fi; \
 		echo "$(GREEN)kubectl proxy lanzado en tmux (sesion: $(TMUX_SESSION), ventana: kubectl-proxy)$(NC)"; \
 	else \
-		echo "$(YELLOW)Nota: Ejecuta 'kubectl proxy' en otra terminal antes de iniciar Backstage.$(NC)"; \
+		echo "$(RED)Error: tmux no esta instalado y kubectl proxy no esta corriendo.$(NC)"; \
+		echo "$(YELLOW)Instala tmux: macOS: brew install tmux | Linux/WSL2: sudo apt-get install tmux$(NC)"; \
+		exit 1; \
 	fi
 
 ## Verificar
